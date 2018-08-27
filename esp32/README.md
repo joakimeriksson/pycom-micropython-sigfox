@@ -30,3 +30,12 @@ Using frozen modules
 
 Place all the python scripts that you'd like to be frozen into the flash memory of the board inside
 the 'frozen' folder in the esp32 directory. Then build as indicated before.
+
+
+/// JE
+Adding modules
+
+* Add to the esb32/mods file (a file.c at least - see micropython hello-world tutorial)
+* Add to the esb32 mpconfigport.h
+* Add to the application.mk
+
