@@ -20,6 +20,8 @@ typedef struct _mymodule_hello_obj_t {
     mp_obj_base_t base;
     // a member created by us
     uint8_t hello_number;
+    /* a callback function - in python */
+    mp_obj_t callback;
 } mymodule_hello_obj_t;
 
 STATIC void mymodule_hello_print( const mp_print_t *print,
@@ -28,7 +30,7 @@ STATIC void mymodule_hello_print( const mp_print_t *print,
     // get a ptr to the C-struct of the object
     mymodule_hello_obj_t *self = MP_OBJ_TO_PTR(self_in);
     // print the number
-    printf ("Hello(%u)", self->hello_number);
+    printf("Hello(%u)\n", self->hello_number);
 };
 
 STATIC mp_obj_t mymodule_hello_increment(mp_obj_t self_in) {
@@ -37,12 +39,17 @@ STATIC mp_obj_t mymodule_hello_increment(mp_obj_t self_in) {
     return mp_const_none;
 };
 
-MP_DEFINE_CONST_FUN_OBJ_1(mymodule_hello_increment_obj,
-                          mymodule_hello_increment);
+STATIC mp_obj_t mymodule_callback(mp_obj_t self_in, mp_obj_t callback);
+
+static MP_DEFINE_CONST_FUN_OBJ_1(mymodule_hello_increment_obj,
+                                 mymodule_hello_increment);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mymodule_callback_obj,
+                                 mymodule_callback);
 
 // creating the table of global members
 STATIC const mp_rom_map_elem_t mymodule_hello_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_inc), MP_ROM_PTR(&mymodule_hello_increment_obj) },
+  { MP_ROM_QSTR(MP_QSTR_inc), MP_ROM_PTR(&mymodule_hello_increment_obj) },
+  { MP_ROM_QSTR(MP_QSTR_callback), MP_ROM_PTR(&mymodule_callback_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mymodule_hello_locals_dict,
@@ -65,6 +72,25 @@ mp_obj_t mymodule_hello_make_new( const mp_obj_type_t *type,
     return MP_OBJ_FROM_PTR(self);
 }
 
+/// \method callback(fun)
+/// Set the function to be called when the timer triggers.
+/// `fun` is passed 1 argument, the timer object.
+/// If `fun` is `None` then the callback will be disabled.
+STATIC mp_obj_t mymodule_callback(mp_obj_t self_in, mp_obj_t callback) {
+    mymodule_hello_obj_t *self = self_in;
+    if (callback == mp_const_none) {
+        self->callback = mp_const_none;
+    } else if (mp_obj_is_callable(callback)) {
+        self->callback = callback;
+        printf("The callback was set - lets call it!\n");
+        // Can be called like this?
+        mp_call_function_1(callback, self);
+    } else {
+        mp_raise_ValueError("callback must be None or a callable object");
+    }
+    return mp_const_none;
+}
+
 // create the class-object itself
 const mp_obj_type_t mymodule_helloObj_type = {
     // "inherit" the type "type"
@@ -78,6 +104,7 @@ const mp_obj_type_t mymodule_helloObj_type = {
      // and the global members
     .locals_dict = (mp_obj_dict_t*)&mymodule_hello_locals_dict,
 };
+
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mymodule_hello_obj, mymodule_hello);
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mymodule_hello2_obj, mymodule_hello2);
